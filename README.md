@@ -1,1 +1,2 @@
-# DB_Prak3
+# DB-Prak2
+DB Praktikum 2
