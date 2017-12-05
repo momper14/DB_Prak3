@@ -1,6 +1,12 @@
+
 import java.io.*;
 import java.sql.*;
+import java.text.*;
 import java.util.*;
+import java.math.*;
+import static java.math.RoundingMode.UP;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 // beinhaltet die Aufgabenstellungs-Lösungen
 public class Main {
@@ -107,6 +113,8 @@ public class Main {
             System.out.println("(4) Anzeigen der Stammdaten eines Artikels");
             System.out.println("(5) Erfassen eines neuen Lagerbestandes");
             System.out.println("(6) anpassen der Menge eines Artikels");
+            System.out.println("(7) Versandmeldung");
+            System.out.println("(8) Rechnungserstellung");
             System.out.println("(0) Zurück");
 
             choice = Integer.parseInt(reader.readLine());
@@ -210,10 +218,103 @@ public class Main {
                     }
                     break;
                 }
+
+                case 7: {
+                    System.out.println("Bitte Bestellnummer eingeben: ");
+                    String benr = reader.readLine();
+                    System.out.println("Bitte Lieferdatum eingeben (dd.mm.yyyy): ");
+                    String vdat = reader.readLine();
+                    String spalten[] = {"LDAT", "UET", "GUTS", "RBET"};
+                    String where = "BENR = " + benr;
+                    ArrayList<String[]> ldat;
+                    String vdatToDate = "TO_DATE('" + vdat + "','DD.MM.YYYY')";
+                    SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
+
+                    try {
+                        java.util.Date vdatDate = dateFormat.parse(vdat);
+
+                        ldat = con.select("KUBEST", spalten, where);
+                        if (ldat.size() == 1) {
+                            dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                            java.util.Date ldatDate = dateFormat.parse(ldat.get(0)[0]);
+                            if (vdatDate.compareTo(ldatDate) <= 0) {
+                                spalten = new String[]{"LDAT", "UET", "GUTS"};
+                                String werte[] = {vdatToDate, "0", "0"};
+                                Util.update(con, "KUBEST", spalten, werte, where);
+                            } else {
+                                spalten = new String[]{"UET", "STATUS"};
+                                String werte[] = {vdatToDate + " - LDAT", "2"};
+                                Util.update(con, "KUBEST", spalten, werte, where);
+
+                                spalten = new String[]{"GUTS", "LDAT"};
+                                werte = new String[]{"(RBET * 0.05 * UET) / 365", vdatToDate};
+                                Util.update(con, "KUBEST", spalten, werte, where);
+                            }
+                        } else {
+                            System.out.println("Keinen Eintrag gefunden!");
+                        }
+                    } catch (SQLException | ParseException e) {
+                        if (e.getCause() != null) {
+                            System.err.println(e.getCause().toString());
+                        } else {
+                            e.printStackTrace();
+                        }
+                    }
+                    break;
+                }
+
+                case 8: {
+                    System.out.println("Bitte geben Sie eine Bestellnummer ein: ");
+                    String benr = reader.readLine();
+                    ArrayList<String[]> kubest;
+                    String spaltenKubest[] = {"BENR", "STATUS", "KNR", "ARTNR", "BMENGE", "RBET", "LDAT", "GUTS"},
+                            rech[] = new String[11],
+                            whereKubest = "BENR = " + benr;
+                    try {
+                        kubest = con.select("KUBEST", spaltenKubest, whereKubest);
+                        if (kubest.size() == 1) {
+                            if (kubest.get(0)[1].equals("2")) {
+                                String spaltenKunde[] = {"KNAME", "PLZ", "ORT", "STRASSE"},
+                                        whereKunde = "KNR = " + kubest.get(0)[2],
+                                        spaltenArtikel[] = {"ARTBEZ"},
+                                        whereArtikel = "ARTBEZ = " + kubest.get(0)[4];
+                                ArrayList<String[]> artikel, kunde;
+                                artikel = con.select("ARTIKEL", spaltenArtikel, whereArtikel);
+                                kunde = con.select("KUNDE", spaltenKunde, whereKunde);
+
+                                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                                Calendar cal = Calendar.getInstance();
+                                cal.setTime(dateFormat.parse(kubest.get(0)[6]));
+                                cal.add(Calendar.DATE, 14);
+
+                                rech[0] = "" + renrNext(con);
+                                rech[1] = cal.getTime().toString();
+                                rech[2] = kubest.get(0)[2];
+                                rech[3] = kunde.get(0)[0];
+                                rech[4] = kunde.get(0)[1];
+                                rech[5] = kunde.get(0)[2];
+                                rech[6] = kunde.get(0)[3];
+                                rech[7] = kubest.get(0)[4];
+                                rech[8] = artikel.get(0)[0];
+                                rech[9] = kubest.get(0)[4];
+                                rech[10] = (new BigDecimal(kubest.get(0)[5]).subtract(new BigDecimal(kubest.get(0)[7])).round(new MathContext(2, UP))).toString();
+                            }
+                        } else {
+                            System.out.println("Keinen Eintrag gefunden!");
+                        }
+                    } catch (SQLException | ParseException e) {
+                        if (e.getCause() != null) {
+                            System.err.println(e.getCause().toString());
+                        } else {
+                            e.printStackTrace();
+                        }
+                    }
+                    break;
+                }
             }
         } while (choice != 0);
     }
-// Methode zum Erfassen einer Kundenbestellung
+    // Methode zum Erfassen einer Kundenbestellung
 
     public static void nr6(OracleConnection con, int nurPruefen) throws IOException, SQLException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
@@ -241,7 +342,7 @@ public class Main {
 
         String spaltenSel[] = {"BSTNR", "MENGE"};
         lagerbestand = con.select("LAGERBESTAND", spaltenSel, "ARTNR = " + artikel.get(0)[0]);
-        
+
         //Prüfen ob eine ausreichende Menge in den Lagern liegt 
         if (mengeEin <= mengeLag) {
             int mengeEinTmp = mengeEin, mengeTmp;
@@ -433,22 +534,21 @@ public class Main {
         //Ausgabe der Spaltennamen
         for (String str : spalten) {
             line.append(str);
-           System.out.printf("%15s|",str);
-            
+            System.out.printf("%15s|", str);
+
         }
-       
-       System.out.println();
+
+        System.out.println();
 
         //Ausgabe des Tabellen Inhalts
         for (String[] arr : arrList) {
-            
+
             line = new StringBuilder();
             for (String str : arr) {
-                
+
                 str = str.replace("00:00:00.0", "");
-                System.out.printf("%15s ",str);
-                 
-                
+                System.out.printf("%15s ", str);
+
             }
             System.out.println(line.toString());
         }
@@ -469,5 +569,24 @@ public class Main {
         }
 
         return ret + 1;
+    }
+
+    public static int renrNext(OracleConnection con) throws SQLException {
+        int ret = 0;
+        ArrayList<String[]> kubest;
+        String spalten[] = {"RENR"};
+        kubest = con.select("RECHNUNG", spalten, null);
+
+        for (String arr[] : kubest) {
+            if (Integer.parseInt(arr[0]) > ret) {
+                ret = Integer.parseInt(arr[0]);
+            }
+        }
+
+        return ret + 1;
+    }
+
+    private static String BigDecimal(String string) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }
