@@ -77,9 +77,9 @@ public class Util {
     }
 
     public static void writeFile(String name, String text) throws IOException {
-        BufferedWriter writer = new BufferedWriter(new FileWriter(name));
-        writer.write(text);
-        writer.close();
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(name))) {
+            writer.write(text);
+        }
     }
 
     public static void stdExceptionOut(Exception e) {
