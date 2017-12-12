@@ -5,8 +5,6 @@ import java.text.*;
 import java.util.*;
 import java.math.*;
 import static java.math.RoundingMode.UP;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 // beinhaltet die Aufgabenstellungs-Lösungen
 public class Main {
@@ -17,7 +15,6 @@ public class Main {
         OracleConnection con;
         BufferedReader read = new BufferedReader(new InputStreamReader(System.in));
         int choice;
-        int nurPruefen = 0;
         try {
             con = new OracleConnection("dbprak45", "TiMo45");
             do {
@@ -32,28 +29,21 @@ public class Main {
                         nr4(con);
                         break;
                     case 2:
-                        nr5(con, nurPruefen);
+                        nr5(con);
                         break;
                     case 3:
-                        nurPruefen = 1;
-                        nr6(con, nurPruefen);
+                        nr6(con);
                         break;
                 }
             } while (choice != 0);
             con.close();
         } catch (ClassNotFoundException e) {
-            if (e.getCause() != null) {
-                System.err.println(e.getCause().toString());
-            } else {
-                e.printStackTrace();
-            }
+            Util.stdExceptionOut(e);
+
             System.exit(40);
         } catch (SQLException e) {
-            if (e.getCause() != null) {
-                System.err.println(e.getCause().toString());
-            } else {
-                e.printStackTrace();
-            }
+            Util.stdExceptionOut(e);
+
             System.exit(41);
         }
 
@@ -87,11 +77,7 @@ public class Main {
                     Util.insert(con, tabelle, spalten, werte);
                     anzahl++;
                 } catch (SQLException e) {
-                    if (e.getCause() != null) {
-                        System.err.println(e.getCause().toString());
-                    } else {
-                        e.printStackTrace();
-                    }
+                    Util.stdExceptionOut(e);
                 }
             }
         }
@@ -101,7 +87,7 @@ public class Main {
     }
 
     // Bietet das Menü zur Steuerung der Aufgabe 5
-    public static void nr5(OracleConnection con, int nurPruefen) throws IOException {
+    public static void nr5(OracleConnection con) throws IOException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
         int choice;
 
@@ -124,11 +110,7 @@ public class Main {
                     try {
                         anzeigenAllerArtikel(con);
                     } catch (SQLException e) {
-                        if (e.getCause() != null) {
-                            System.err.println(e.getCause().toString());
-                        } else {
-                            e.printStackTrace();
-                        }
+                        Util.stdExceptionOut(e);
                     }
 
                     break;
@@ -136,11 +118,7 @@ public class Main {
                     try {
                         anzeigenAllerLager(con);
                     } catch (SQLException e) {
-                        if (e.getCause() != null) {
-                            System.err.println(e.getCause().toString());
-                        } else {
-                            e.printStackTrace();
-                        }
+                        Util.stdExceptionOut(e);
                     }
 
                     break;
@@ -149,11 +127,7 @@ public class Main {
                     try {
                         anzeigenAllerKunden(con);
                     } catch (SQLException e) {
-                        if (e.getCause() != null) {
-                            System.err.println(e.getCause().toString());
-                        } else {
-                            e.printStackTrace();
-                        }
+                        Util.stdExceptionOut(e);
                     }
 
                     break;
@@ -161,14 +135,9 @@ public class Main {
                     System.out.println("Bitte Artikelnummer eingeben: ");
 
                     try {
-                        nurPruefen = 0;
                         stammdaten(con, reader.readLine());
                     } catch (SQLException e) {
-                        if (e.getCause() != null) {
-                            System.out.println(e.getCause().toString());
-                        } else {
-                            e.printStackTrace();
-                        }
+                        Util.stdExceptionOut(e);
                     }
 
                     break;
@@ -189,11 +158,7 @@ public class Main {
                     try {
                         erfassenLagerbestand(con, bstnr, artnr, lnr, menge);
                     } catch (SQLException e) {
-                        if (e.getCause() != null) {
-                            System.err.println(e.getCause().toString());
-                        } else {
-                            e.printStackTrace();
-                        }
+                        Util.stdExceptionOut(e);
                     }
                     System.out.println("Ihre Eingabe war erfolgreich\n");
                     break;
@@ -210,11 +175,7 @@ public class Main {
                     try {
                         updateMenge(con, bstnr, menge);
                     } catch (SQLException e) {
-                        if (e.getCause() != null) {
-                            System.err.println(e.getCause().toString());
-                        } else {
-                            e.printStackTrace();
-                        }
+                        Util.stdExceptionOut(e);
                     }
                     break;
                 }
@@ -224,41 +185,12 @@ public class Main {
                     String benr = reader.readLine();
                     System.out.println("Bitte Lieferdatum eingeben (dd.mm.yyyy): ");
                     String vdat = reader.readLine();
-                    String spalten[] = {"LDAT", "UET", "GUTS", "RBET"};
-                    String where = "BENR = " + benr;
-                    ArrayList<String[]> ldat;
-                    String vdatToDate = "TO_DATE('" + vdat + "','DD.MM.YYYY')";
-                    SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
-
                     try {
-                        java.util.Date vdatDate = dateFormat.parse(vdat);
-
-                        ldat = con.select("KUBEST", spalten, where);
-                        if (ldat.size() == 1) {
-                            dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-                            java.util.Date ldatDate = dateFormat.parse(ldat.get(0)[0]);
-                            if (vdatDate.compareTo(ldatDate) <= 0) {
-                                spalten = new String[]{"LDAT", "UET", "GUTS"};
-                                String werte[] = {vdatToDate, "0", "0"};
-                                Util.update(con, "KUBEST", spalten, werte, where);
-                            } else {
-                                spalten = new String[]{"UET", "STATUS"};
-                                String werte[] = {vdatToDate + " - LDAT", "2"};
-                                Util.update(con, "KUBEST", spalten, werte, where);
-
-                                spalten = new String[]{"GUTS", "LDAT"};
-                                werte = new String[]{"(RBET * 0.05 * UET) / 365", vdatToDate};
-                                Util.update(con, "KUBEST", spalten, werte, where);
-                            }
-                        } else {
+                        if (!versandrueckmeldung(con, benr, vdat)) {
                             System.out.println("Keinen Eintrag gefunden!");
                         }
                     } catch (SQLException | ParseException e) {
-                        if (e.getCause() != null) {
-                            System.err.println(e.getCause().toString());
-                        } else {
-                            e.printStackTrace();
-                        }
+                        Util.stdExceptionOut(e);
                     }
                     break;
                 }
@@ -266,48 +198,12 @@ public class Main {
                 case 8: {
                     System.out.println("Bitte geben Sie eine Bestellnummer ein: ");
                     String benr = reader.readLine();
-                    ArrayList<String[]> kubest;
-                    String spaltenKubest[] = {"BENR", "STATUS", "KNR", "ARTNR", "BMENGE", "RBET", "LDAT", "GUTS"},
-                            rech[] = new String[11],
-                            whereKubest = "BENR = " + benr;
                     try {
-                        kubest = con.select("KUBEST", spaltenKubest, whereKubest);
-                        if (kubest.size() == 1) {
-                            if (kubest.get(0)[1].equals("2")) {
-                                String spaltenKunde[] = {"KNAME", "PLZ", "ORT", "STRASSE"},
-                                        whereKunde = "KNR = " + kubest.get(0)[2],
-                                        spaltenArtikel[] = {"ARTBEZ"},
-                                        whereArtikel = "ARTBEZ = " + kubest.get(0)[4];
-                                ArrayList<String[]> artikel, kunde;
-                                artikel = con.select("ARTIKEL", spaltenArtikel, whereArtikel);
-                                kunde = con.select("KUNDE", spaltenKunde, whereKunde);
-
-                                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-                                Calendar cal = Calendar.getInstance();
-                                cal.setTime(dateFormat.parse(kubest.get(0)[6]));
-                                cal.add(Calendar.DATE, 14);
-
-                                rech[0] = "" + renrNext(con);
-                                rech[1] = cal.getTime().toString();
-                                rech[2] = kubest.get(0)[2];
-                                rech[3] = kunde.get(0)[0];
-                                rech[4] = kunde.get(0)[1];
-                                rech[5] = kunde.get(0)[2];
-                                rech[6] = kunde.get(0)[3];
-                                rech[7] = kubest.get(0)[4];
-                                rech[8] = artikel.get(0)[0];
-                                rech[9] = kubest.get(0)[4];
-                                rech[10] = (new BigDecimal(kubest.get(0)[5]).subtract(new BigDecimal(kubest.get(0)[7])).round(new MathContext(2, UP))).toString();
-                            }
-                        } else {
+                        if (rechnungserstellung(con, benr) == -1) {
                             System.out.println("Keinen Eintrag gefunden!");
                         }
                     } catch (SQLException | ParseException e) {
-                        if (e.getCause() != null) {
-                            System.err.println(e.getCause().toString());
-                        } else {
-                            e.printStackTrace();
-                        }
+                        Util.stdExceptionOut(e);
                     }
                     break;
                 }
@@ -316,12 +212,12 @@ public class Main {
     }
     // Methode zum Erfassen einer Kundenbestellung
 
-    public static void nr6(OracleConnection con, int nurPruefen) throws IOException, SQLException {
+    public static void nr6(OracleConnection con) throws IOException, SQLException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
         int bestnr = benrNext(con);
         ArrayList<String[]> kunde, artikel, lagerbestand, kubest;
 
-        //Einlesen und ueberpruefen der Daten auf Richtigkeit 
+        // Einlesen und ueberpruefen der Daten auf Richtigkeit 
         System.out.println("----------Automatisches Bestellsystem----------\n\n");
 
         do {
@@ -343,14 +239,13 @@ public class Main {
         String spaltenSel[] = {"BSTNR", "MENGE"};
         lagerbestand = con.select("LAGERBESTAND", spaltenSel, "ARTNR = " + artikel.get(0)[0]);
 
-        //Prüfen ob eine ausreichende Menge in den Lagern liegt 
+        // Prüfen ob eine ausreichende Menge in den Lagern liegt 
         if (mengeEin <= mengeLag) {
             int mengeEinTmp = mengeEin, mengeTmp;
             for (String arr[] : lagerbestand) {
                 mengeTmp = Integer.parseInt(arr[1]);
                 if (mengeTmp >= mengeEinTmp) {
                     mengeTmp = mengeEinTmp;
-                    mengeEinTmp = 0;
                 }
                 String spaltenUpd[] = {"MENGE"}, werte[] = {arr[1] + " - " + mengeTmp};
                 Util.update(con, "LAGERBESTAND", spaltenUpd, werte, "BSTNR = " + arr[0]);
@@ -360,7 +255,7 @@ public class Main {
                     break;
                 }
             }
-            //Insert auf KUBEST
+            // Insert auf KUBEST
             String spalten[] = {"BENR", "KNR", "ARTNR", "BMENGE", "BDAT", "LDAT", "STATUS", "RBET"},
                     werte[] = {"" + bestnr, kunde.get(0)[0], artikel.get(0)[0], "" + mengeEin, "sysdate", "sysdate+14", "" + 1, artikel.get(0)[1] + " * " + mengeEin};
 
@@ -368,9 +263,7 @@ public class Main {
             spalten = new String[]{"LDAT", "RBET"};
             kubest = con.select("KUBEST", spalten, "BENR = " + bestnr);
 
-            BufferedWriter writer = new BufferedWriter(new FileWriter("AB" + kunde.get(0)[0] + "B" + bestnr + ".txt"));
-
-            //Schreiben des Lieferscheins
+            // Schreiben des Lieferscheins
             StringBuilder line = new StringBuilder();
             line.append("NAME: ").append(kunde.get(0)[1]).append("\n");
             line.append("PLZ: ").append(kunde.get(0)[2]).append("\n");
@@ -380,8 +273,7 @@ public class Main {
             line.append("spätestes Lieferdatum: ").append(kubest.get(0)[0]).append("\n");
             line.append("Betrag: ").append(kubest.get(0)[1]);
 
-            writer.write(line.toString());
-            writer.close();
+            Util.writeFile("AB" + kunde.get(0)[0] + "B" + bestnr + ".txt", line.toString());
 
             System.out.println("----------Lieferschein wurde erstellt----------");
 
@@ -391,6 +283,118 @@ public class Main {
             System.out.println("Nicht genügend Lagerbestand vorhanden!");
 
         }
+    }
+
+    public static boolean versandrueckmeldung(OracleConnection con, String benr, String vdat) throws IOException, ParseException, SQLException {
+
+        String spalten[] = {"LDAT", "UET", "GUTS", "RBET"};
+        String where = "BENR = " + benr;
+        ArrayList<String[]> ldat;
+        String vdatToDate = "TO_DATE('" + vdat + "','DD.MM.YYYY')";
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
+
+        java.util.Date vdatDate = dateFormat.parse(vdat);
+
+        ldat = con.select("KUBEST", spalten, where);
+        if (ldat.size() == 1) {
+            dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            java.util.Date ldatDate = dateFormat.parse(ldat.get(0)[0]);
+            if (vdatDate.compareTo(ldatDate) <= 0) {
+                spalten = new String[]{"LDAT", "UET", "GUTS", "STATUS"};
+                String werte[] = {vdatToDate, "0", "0", "2"};
+                Util.update(con, "KUBEST", spalten, werte, where);
+            } else {
+                spalten = new String[]{"UET", "STATUS"};
+                String werte[] = {vdatToDate + " - LDAT", "2"};
+                Util.update(con, "KUBEST", spalten, werte, where);
+
+                spalten = new String[]{"GUTS", "LDAT"};
+                werte = new String[]{"(RBET * 0.05 * UET) / 365", vdatToDate};
+                Util.update(con, "KUBEST", spalten, werte, where);
+            }
+            return true;
+        } else {
+            return false;
+        }
+
+    }
+
+    public static int rechnungserstellung(OracleConnection con, String benr) throws SQLException, ParseException, IOException {
+
+        ArrayList<String[]> kubest;
+        String spaltenKubest[] = {"BENR", "STATUS", "KNR", "ARTNR", "BMENGE", "RBET", "LDAT", "GUTS"},
+                rech[] = new String[11],
+                whereKubest = "BENR = " + benr;
+
+        kubest = con.select("KUBEST", spaltenKubest, whereKubest);
+        if (kubest.size() == 1) {
+            if (kubest.get(0)[1].equals("2")) {
+                String spaltenKunde[] = {"KNAME", "PLZ", "ORT", "STRASSE"},
+                        whereKunde = "KNR = " + kubest.get(0)[2],
+                        spaltenArtikel[] = {"ARTBEZ"},
+                        whereArtikel = "ARTNR = " + kubest.get(0)[3];
+                ArrayList<String[]> artikel, kunde;
+                artikel = con.select("ARTIKEL", spaltenArtikel, whereArtikel);
+                kunde = con.select("KUNDE", spaltenKunde, whereKunde);
+
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(dateFormat.parse(kubest.get(0)[6]));
+                cal.add(Calendar.DATE, 14);
+
+                // RENR
+                rech[0] = kubest.get(0)[0] + "R";
+                // RDAT
+                rech[1] = dateFormat.format(cal.getTime());
+                // KNR
+                rech[2] = kubest.get(0)[2];
+                // KNAME
+                rech[3] = kunde.get(0)[0];
+                // PLZ
+                rech[4] = kunde.get(0)[1];
+                // ORT
+                rech[5] = kunde.get(0)[2];
+                // Strasse
+                rech[6] = kunde.get(0)[3];
+                // ARTNR
+                rech[7] = kubest.get(0)[4];
+                // ARTBEZ
+                rech[8] = artikel.get(0)[0];
+                // BMENGE
+                rech[9] = kubest.get(0)[4];
+                // ERBET
+                rech[10] = new BigDecimal(kubest.get(0)[5]).subtract(new BigDecimal(kubest.get(0)[7])).setScale(2, RoundingMode.CEILING).toString();
+
+                String spaltenRechnung[] = {"BENR", "RDAT", "ERBET"},
+                        werteRechnung[] = {kubest.get(0)[0], "TO_DATE('" + rech[1] + "','YYYY-MM-DD HH24:MI:SS')", rech[10]};
+                Util.insert(con, "RECHNUNG", spaltenRechnung, werteRechnung);
+
+                StringBuilder line = new StringBuilder();
+                line.append("Rechnungsnummer: ").append(rech[0]);
+                line.append("\nRechnungsdatum: ").append(rech[1]);
+
+                line.append("\n\nKundeninformationen: ");
+                line.append("\n\tKundennummer: ").append(rech[2]);
+                line.append("\n\tName: : ").append(rech[3]);
+                line.append("\n\tPLZ: ").append(rech[4]);
+                line.append("\n\tOrt: : ").append(rech[5]);
+                line.append("\n\tStrasse: ").append(rech[6]);
+
+                line.append("\n\nArtikelinformationen: ");
+                line.append("\n\tArtikelnummer: ").append(rech[7]);
+                line.append("\n\tBezeichnung: ").append(rech[8]);
+                line.append("\n\tMenge: ").append(rech[9]);
+                line.append("\n\nBetrag: ").append(rech[10]);
+
+                Util.writeFile("RECH-" + kubest.get(0)[0] + ".txt", line.toString());
+                return 0;
+            } else {
+                return 1;
+            }
+        } else {
+            return -1;
+        }
+
     }
 
     // Zeig alle Datensätze der Tabelle Artikel
@@ -586,7 +590,4 @@ public class Main {
         return ret + 1;
     }
 
-    private static String BigDecimal(String string) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
 }
