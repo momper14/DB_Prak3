@@ -4,7 +4,8 @@ import java.sql.*;
 import java.text.*;
 import java.util.*;
 import java.math.*;
-import static java.math.RoundingMode.UP;
+import javax.xml.parsers.*;
+import org.xml.sax.*;
 
 // beinhaltet die Aufgabenstellungs-Lösungen
 public class Main {
@@ -191,7 +192,9 @@ public class Main {
                         }
                     } catch (SQLException | ParseException e) {
                         Util.stdExceptionOut(e);
+
                     }
+
                     break;
                 }
 
@@ -202,7 +205,11 @@ public class Main {
                         if (rechnungserstellung(con, benr) == -1) {
                             System.out.println("Keinen Eintrag gefunden!");
                         }
-                    } catch (SQLException | ParseException e) {
+                    } catch (SAXParseException ep) {
+                        System.out.println("Parser meldet FEHLER : " + ep.toString());
+                        System.out.println("an der Entity        : " + ep.getPublicId());
+                        System.out.println("Zeile,Spalte         : " + ep.getLineNumber() + "," + ep.getColumnNumber());
+                    } catch (ParserConfigurationException | SAXException | SQLException | ParseException e) {
                         Util.stdExceptionOut(e);
                     }
                     break;
@@ -276,6 +283,7 @@ public class Main {
             Util.writeFile("AB" + kunde.get(0)[0] + "B" + bestnr + ".txt", line.toString());
 
             System.out.println("----------Lieferschein wurde erstellt----------");
+            System.out.println("Die Rechnungsnummer lautet: " + bestnr);
 
         } else {
             int dx = mengeEin - mengeLag;
@@ -312,6 +320,7 @@ public class Main {
                 werte = new String[]{"(RBET * 0.05 * UET) / 365", vdatToDate};
                 Util.update(con, "KUBEST", spalten, werte, where);
             }
+            System.out.println("\n------Versanddaten aufgenommen!--------\n");
             return true;
         } else {
             return false;
@@ -319,7 +328,7 @@ public class Main {
 
     }
 
-    public static int rechnungserstellung(OracleConnection con, String benr) throws SQLException, ParseException, IOException {
+    public static int rechnungserstellung(OracleConnection con, String benr) throws SQLException, ParseException, IOException, ParserConfigurationException, SAXException {
 
         ArrayList<String[]> kubest;
         String spaltenKubest[] = {"BENR", "STATUS", "KNR", "ARTNR", "BMENGE", "RBET", "LDAT", "GUTS"},
@@ -387,6 +396,33 @@ public class Main {
                 line.append("\n\nBetrag: ").append(rech[10]);
 
                 Util.writeFile("RECH-" + kubest.get(0)[0] + ".txt", line.toString());
+
+                line = new StringBuilder();
+                line.append("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>");
+                line.append("\n<!DOCTYPE RECH SYSTEM \"rechnung.dtd\">");
+                line.append("\n<RECH>");
+                line.append("\n\t<RENR>").append(rech[0]).append("</RENR>");
+                line.append("\n\t<RDAT>").append(rech[1]).append("</RDAT>");
+                line.append("\n\t<KNR>").append(rech[2]).append("</KNR>");
+                line.append("\n\t<KNAME>").append(rech[3]).append("</KNAME>");
+                line.append("\n\t<PLZ>").append(rech[4]).append("</PLZ>");
+                line.append("\n\t<ORT>").append(rech[5]).append("</ORT>");
+                line.append("\n\t<Strasse>").append(rech[6]).append("</Strasse>");
+                line.append("\n\t<ARTNR>").append(rech[7]).append("</ARTNR>");
+                line.append("\n\t<ARTBEZ>").append(rech[8]).append("</ARTBEZ>");
+                line.append("\n\t<BMENGE>").append(rech[9]).append("</BMENGE>");
+                line.append("\n\t<ERBET>").append(rech[10]).append("</ERBET>");
+                line.append("\n</RECH>");
+
+                Util.writeFile("RECH-" + kubest.get(0)[0] + ".xml", line.toString());
+
+                System.out.println("\n------Rechnung erstellt!--------\n");
+
+                parseXML("RECH-" + kubest.get(0)[0] + ".xml", false);
+                System.out.println("Elemente sind wohlgeformt");
+
+                parseXML("RECH-" + kubest.get(0)[0] + ".xml", false);
+                System.out.println("Elemente sind valide");
                 return 0;
             } else {
                 return 1;
@@ -575,19 +611,15 @@ public class Main {
         return ret + 1;
     }
 
-    public static int renrNext(OracleConnection con) throws SQLException {
-        int ret = 0;
-        ArrayList<String[]> kubest;
-        String spalten[] = {"RENR"};
-        kubest = con.select("RECHNUNG", spalten, null);
+    public static void parseXML(String file, boolean validate) throws ParserConfigurationException, SAXException, FileNotFoundException, IOException {
+        SAXParserFactory factory = SAXParserFactory.newInstance();
+        factory.setValidating(validate);
+        XMLReader xmlReader = factory.newSAXParser().getXMLReader();
+        xmlReader.setContentHandler(new DBContentHandler());
+        xmlReader.setErrorHandler(new DBErrorHandler());
 
-        for (String arr[] : kubest) {
-            if (Integer.parseInt(arr[0]) > ret) {
-                ret = Integer.parseInt(arr[0]);
-            }
-        }
-
-        return ret + 1;
+        InputSource is = new InputSource(new FileReader(file));
+        is.setSystemId("rechnung.dtd");
+        xmlReader.parse(is);
     }
-
 }
