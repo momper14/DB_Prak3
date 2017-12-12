@@ -420,9 +420,13 @@ public class Main {
 
                 parseXML("RECH-" + kubest.get(0)[0] + ".xml", false);
                 System.out.println("Elemente sind wohlgeformt");
-
-                parseXML("RECH-" + kubest.get(0)[0] + ".xml", false);
-                System.out.println("Elemente sind valide");
+                
+                try {
+                    parseXML("RECH-" + kubest.get(0)[0] + ".xml", true);
+                    System.out.println("Elemente sind valide");
+                } catch (SAXParseException e) {
+                    System.out.println("Elemente sind invalide");
+                }
                 return 0;
             } else {
                 return 1;
