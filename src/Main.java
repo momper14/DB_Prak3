@@ -420,7 +420,7 @@ public class Main {
 
                 parseXML("RECH-" + kubest.get(0)[0] + ".xml", false);
                 System.out.println("Elemente sind wohlgeformt");
-                
+
                 try {
                     parseXML("RECH-" + kubest.get(0)[0] + ".xml", true);
                     System.out.println("Elemente sind valide");
