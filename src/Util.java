@@ -1,3 +1,7 @@
+
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.sql.SQLException;
 
 // bietet Hilfsfunktionen
@@ -72,4 +76,17 @@ public class Util {
         return ret;
     }
 
+    public static void writeFile(String name, String text) throws IOException {
+        BufferedWriter writer = new BufferedWriter(new FileWriter(name));
+        writer.write(text);
+        writer.close();
+    }
+
+    public static void stdExceptionOut(Exception e) {
+        if (e.getCause() != null) {
+            System.err.println(e.getCause().toString());
+        } else {
+            e.printStackTrace();
+        }
+    }
 }
