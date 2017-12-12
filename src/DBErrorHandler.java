@@ -17,6 +17,7 @@ import org.xml.sax.SAXParseException;
             System.out.println("Parser meldet FEHLER : " + ep.toString());
             System.out.println("an der Entity        : " + ep.getPublicId());
             System.out.println("Zeile,Spalte         : " + ep.getLineNumber() + "," + ep.getColumnNumber());
+            throw ep;
         }
 
         @Override
@@ -24,5 +25,6 @@ import org.xml.sax.SAXParseException;
             System.out.println("Fataler FEHLER !!!   : " + ep.toString());
             System.out.println("an der Entity        : " + ep.getPublicId());
             System.out.println("Zeile,Spalte         : " + ep.getLineNumber() + "," + ep.getColumnNumber());
+            throw ep;
         }
     }
