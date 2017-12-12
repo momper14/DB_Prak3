@@ -398,21 +398,21 @@ public class Main {
                 Util.writeFile("RECH-" + kubest.get(0)[0] + ".txt", line.toString());
 
                 line = new StringBuilder();
-                line.append("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>");
-                line.append("\n<!DOCTYPE RECH SYSTEM \"rechnung.dtd\">");
-                line.append("\n<RECH>");
-                line.append("\n\t<RENR>").append(rech[0]).append("</RENR>");
-                line.append("\n\t<RDAT>").append(rech[1]).append("</RDAT>");
-                line.append("\n\t<KNR>").append(rech[2]).append("</KNR>");
-                line.append("\n\t<KNAME>").append(rech[3]).append("</KNAME>");
-                line.append("\n\t<PLZ>").append(rech[4]).append("</PLZ>");
-                line.append("\n\t<ORT>").append(rech[5]).append("</ORT>");
-                line.append("\n\t<Strasse>").append(rech[6]).append("</Strasse>");
-                line.append("\n\t<ARTNR>").append(rech[7]).append("</ARTNR>");
-                line.append("\n\t<ARTBEZ>").append(rech[8]).append("</ARTBEZ>");
-                line.append("\n\t<BMENGE>").append(rech[9]).append("</BMENGE>");
-                line.append("\n\t<ERBET>").append(rech[10]).append("</ERBET>");
-                line.append("\n</RECH>");
+                line.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+                line.append("<!DOCTYPE RECH SYSTEM \"rechnung.dtd\">\n");
+                line.append("<RECH>\n");
+                line.append("\t<RENR>").append(rech[0]).append("</RENR>\n");
+                line.append("\t<RDAT>").append(rech[1]).append("</RDAT>\n");
+                line.append("\t<KNR>").append(rech[2]).append("</KNR>\n");
+                line.append("\t<KNAME>").append(rech[3]).append("</KNAME>\n");
+                line.append("\t<PLZ>").append(rech[4]).append("</PLZ>\n");
+                line.append("\t<ORT>").append(rech[5]).append("</ORT>\n");
+                line.append("\t<Strasse>").append(rech[6]).append("</Strasse>\n");
+                line.append("\t<ARTNR>").append(rech[7]).append("</ARTNR>\n");
+                line.append("\t<ARTBEZ>").append(rech[8]).append("</ARTBEZ>\n");
+                line.append("\t<BMENGE>").append(rech[9]).append("</BMENGE>\n");
+                line.append("\t<ERBET>").append(rech[10]).append("</ERBET>\n");
+                line.append("</RECH>");
 
                 Util.writeFile("RECH-" + kubest.get(0)[0] + ".xml", line.toString());
 
@@ -617,9 +617,6 @@ public class Main {
         XMLReader xmlReader = factory.newSAXParser().getXMLReader();
         xmlReader.setContentHandler(new DBContentHandler());
         xmlReader.setErrorHandler(new DBErrorHandler());
-
-        InputSource is = new InputSource(new FileReader(file));
-        is.setSystemId("rechnung.dtd");
-        xmlReader.parse(is);
+        xmlReader.parse(new InputSource(new FileReader(file)));
     }
 }
