@@ -1,8 +1,0 @@
-NAME: Hans Müller
-PLZ: 33575
-ORT: Buschhausen
-STRASSE: Baumallee
-
-Artikel: H-Milch	Menge: 0
-spätestes Lieferdatum: 2017-12-27 13:05:21.0
-Betrag: 0
