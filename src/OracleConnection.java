@@ -54,6 +54,15 @@ public class OracleConnection {
         return ret;
     }
 
+    public String[] selectSingle(String tabelle, String spalten[], String where) throws SQLException {
+        ArrayList<String[]> tab = select(tabelle, spalten, where);
+        if (tab.size() > 0) {
+            return tab.get(0);
+        } else {
+            return null;
+        }
+    }
+
     // Schließt die Verbindung zur Datenbank
     public void close() throws SQLException {
         con.close();

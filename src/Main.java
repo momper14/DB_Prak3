@@ -222,29 +222,36 @@ public class Main {
     public static void nr6(OracleConnection con) throws IOException, SQLException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
         int bestnr = benrNext(con);
-        ArrayList<String[]> kunde, artikel, lagerbestand, kubest;
+        ArrayList<String[]> lagerbestand;
+        String artikel[], kunde[], kubest[];
 
         // Einlesen und ueberpruefen der Daten auf Richtigkeit 
         System.out.println("----------Automatisches Bestellsystem----------\n\n");
 
+        String spaltenKunde[] = {"KNR", "KNAME", "PLZ", "ORT", "STRASSE"};
         do {
             System.out.println("Bitte geben Sie die Kundenummer ein\n");
-            String spalten[] = {"KNR", "KNAME", "PLZ", "ORT", "STRASSE"};
-            kunde = con.select("KUNDE", spalten, "KNR = " + reader.readLine());
-        } while (kunde.size() < 1);
+            kunde = con.selectSingle("KUNDE", spaltenKunde, "KNR = " + reader.readLine());
+            if (kunde == null) {
+                System.out.println("Keinen Kunden gefunden");
+            }
+        } while (kunde == null);
 
+        String spaltenArtikel[] = {"ARTNR", "PREIS", "ARTBEZ"};
         do {
             System.out.println("Bitte geben Sie die Artikelnummer ein\n");
-            String spalten[] = {"ARTNR", "PREIS", "ARTBEZ"};
-            artikel = con.select("ARTIKEL", spalten, "ARTNR = " + reader.readLine());
-        } while (artikel.size() < 1);
+            artikel = con.selectSingle("ARTIKEL", spaltenArtikel, "ARTNR = " + reader.readLine());
+            if (artikel == null) {
+                System.out.println("Keinen Artikel gefunden");
+            }
+        } while (artikel == null);
 
         System.out.println("Bitte geben sie die Bestellmenge ein");
         int mengeEin = Integer.parseInt(reader.readLine());
-        int mengeLag = stammdaten(con, artikel.get(0)[0]);
+        int mengeLag = stammdaten(con, artikel[0]);
 
         String spaltenSel[] = {"BSTNR", "MENGE"};
-        lagerbestand = con.select("LAGERBESTAND", spaltenSel, "ARTNR = " + artikel.get(0)[0]);
+        lagerbestand = con.select("LAGERBESTAND", spaltenSel, "ARTNR = " + artikel[0]);
 
         // Prüfen ob eine ausreichende Menge in den Lagern liegt 
         if (mengeEin <= mengeLag) {
@@ -263,24 +270,24 @@ public class Main {
                 }
             }
             // Insert auf KUBEST
-            String spalten[] = {"BENR", "KNR", "ARTNR", "BMENGE", "BDAT", "LDAT", "STATUS", "RBET"},
-                    werte[] = {"" + bestnr, kunde.get(0)[0], artikel.get(0)[0], "" + mengeEin, "sysdate", "sysdate+14", "" + 1, artikel.get(0)[1] + " * " + mengeEin};
+            String spaltenKubest[] = {"BENR", "KNR", "ARTNR", "BMENGE", "BDAT", "LDAT", "STATUS", "RBET"},
+                    werte[] = {"" + bestnr, kunde[0], artikel[0], "" + mengeEin, "sysdate", "sysdate+14", "" + 1, artikel[1] + " * " + mengeEin};
 
-            Util.insert(con, "KUBEST", spalten, werte);
-            spalten = new String[]{"LDAT", "RBET"};
-            kubest = con.select("KUBEST", spalten, "BENR = " + bestnr);
+            Util.insert(con, "KUBEST", spaltenKubest, werte);
+            String spaltenKubestSel[] = new String[]{"LDAT", "RBET"};
+            kubest = con.selectSingle("KUBEST", spaltenKubestSel, "BENR = " + bestnr);
 
             // Schreiben des Lieferscheins
             StringBuilder line = new StringBuilder();
-            line.append("NAME: ").append(kunde.get(0)[1]).append("\n");
-            line.append("PLZ: ").append(kunde.get(0)[2]).append("\n");
-            line.append("ORT: ").append(kunde.get(0)[3]).append("\n");
-            line.append("STRASSE: ").append(kunde.get(0)[4]).append("\n\n");
-            line.append("Artikel: ").append(artikel.get(0)[2]).append("\tMenge: ").append(mengeEin).append("\n");
-            line.append("spätestes Lieferdatum: ").append(kubest.get(0)[0]).append("\n");
-            line.append("Betrag: ").append(kubest.get(0)[1]);
+            line.append("NAME: ").append(kunde[1]).append("\n");
+            line.append("PLZ: ").append(kunde[2]).append("\n");
+            line.append("ORT: ").append(kunde[3]).append("\n");
+            line.append("STRASSE: ").append(kunde[4]).append("\n\n");
+            line.append("Artikel: ").append(artikel[2]).append("\tMenge: ").append(mengeEin).append("\n");
+            line.append("spätestes Lieferdatum: ").append(kubest[0]).append("\n");
+            line.append("Betrag: ").append(kubest[1]);
 
-            Util.writeFile("AB" + kunde.get(0)[0] + "B" + bestnr + ".txt", line.toString());
+            Util.writeFile("AB" + kunde[0] + "B" + bestnr + ".txt", line.toString());
 
             System.out.println("----------Lieferschein wurde erstellt----------");
             System.out.println("Die Rechnungsnummer lautet: " + bestnr);
@@ -297,16 +304,16 @@ public class Main {
 
         String spalten[] = {"LDAT", "UET", "GUTS", "RBET"};
         String where = "BENR = " + benr;
-        ArrayList<String[]> ldat;
+        String[] ldat;
         String vdatToDate = "TO_DATE('" + vdat + "','DD.MM.YYYY')";
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
 
         java.util.Date vdatDate = dateFormat.parse(vdat);
 
-        ldat = con.select("KUBEST", spalten, where);
-        if (ldat.size() == 1) {
+        ldat = con.selectSingle("KUBEST", spalten, where);
+        if (ldat != null) {
             dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-            java.util.Date ldatDate = dateFormat.parse(ldat.get(0)[0]);
+            java.util.Date ldatDate = dateFormat.parse(ldat[0]);
             if (vdatDate.compareTo(ldatDate) <= 0) {
                 spalten = new String[]{"LDAT", "UET", "GUTS", "STATUS"};
                 String werte[] = {vdatToDate, "0", "0", "2"};
@@ -330,52 +337,52 @@ public class Main {
 
     public static int rechnungserstellung(OracleConnection con, String benr) throws SQLException, ParseException, IOException, ParserConfigurationException, SAXException {
 
-        ArrayList<String[]> kubest;
+        String[] kubest;
         String spaltenKubest[] = {"BENR", "STATUS", "KNR", "ARTNR", "BMENGE", "RBET", "LDAT", "GUTS"},
                 rech[] = new String[11],
                 whereKubest = "BENR = " + benr;
 
-        kubest = con.select("KUBEST", spaltenKubest, whereKubest);
-        if (kubest.size() == 1) {
-            if (kubest.get(0)[1].equals("2")) {
+        kubest = con.selectSingle("KUBEST", spaltenKubest, whereKubest);
+        if (kubest != null) {
+            if (kubest[1].equals("2")) {
                 String spaltenKunde[] = {"KNAME", "PLZ", "ORT", "STRASSE"},
-                        whereKunde = "KNR = " + kubest.get(0)[2],
+                        whereKunde = "KNR = " + kubest[2],
                         spaltenArtikel[] = {"ARTBEZ"},
-                        whereArtikel = "ARTNR = " + kubest.get(0)[3];
-                ArrayList<String[]> artikel, kunde;
-                artikel = con.select("ARTIKEL", spaltenArtikel, whereArtikel);
-                kunde = con.select("KUNDE", spaltenKunde, whereKunde);
+                        whereArtikel = "ARTNR = " + kubest[3];
+                String[] artikel, kunde;
+                artikel = con.selectSingle("ARTIKEL", spaltenArtikel, whereArtikel);
+                kunde = con.selectSingle("KUNDE", spaltenKunde, whereKunde);
 
                 SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 Calendar cal = Calendar.getInstance();
-                cal.setTime(dateFormat.parse(kubest.get(0)[6]));
+                cal.setTime(dateFormat.parse(kubest[6]));
                 cal.add(Calendar.DATE, 14);
 
                 // RENR
-                rech[0] = kubest.get(0)[0] + "R";
+                rech[0] = kubest[0] + "R";
                 // RDAT
                 rech[1] = dateFormat.format(cal.getTime());
                 // KNR
-                rech[2] = kubest.get(0)[2];
+                rech[2] = kubest[2];
                 // KNAME
-                rech[3] = kunde.get(0)[0];
+                rech[3] = kunde[0];
                 // PLZ
-                rech[4] = kunde.get(0)[1];
+                rech[4] = kunde[1];
                 // ORT
-                rech[5] = kunde.get(0)[2];
+                rech[5] = kunde[2];
                 // Strasse
-                rech[6] = kunde.get(0)[3];
+                rech[6] = kunde[3];
                 // ARTNR
-                rech[7] = kubest.get(0)[4];
+                rech[7] = kubest[4];
                 // ARTBEZ
-                rech[8] = artikel.get(0)[0];
+                rech[8] = artikel[0];
                 // BMENGE
-                rech[9] = kubest.get(0)[4];
+                rech[9] = kubest[4];
                 // ERBET
-                rech[10] = new BigDecimal(kubest.get(0)[5]).subtract(new BigDecimal(kubest.get(0)[7])).setScale(2, RoundingMode.CEILING).toString();
+                rech[10] = new BigDecimal(kubest[5]).subtract(new BigDecimal(kubest[7])).setScale(2, RoundingMode.CEILING).toString();
 
                 String spaltenRechnung[] = {"BENR", "RDAT", "ERBET"},
-                        werteRechnung[] = {kubest.get(0)[0], "TO_DATE('" + rech[1] + "','YYYY-MM-DD HH24:MI:SS')", rech[10]};
+                        werteRechnung[] = {kubest[0], "TO_DATE('" + rech[1] + "','YYYY-MM-DD HH24:MI:SS')", rech[10]};
                 Util.insert(con, "RECHNUNG", spaltenRechnung, werteRechnung);
 
                 StringBuilder line = new StringBuilder();
@@ -395,7 +402,7 @@ public class Main {
                 line.append("\n\tMenge: ").append(rech[9]);
                 line.append("\n\nBetrag: ").append(rech[10]);
 
-                Util.writeFile("RECH-" + kubest.get(0)[0] + ".txt", line.toString());
+                Util.writeFile("RECH-" + kubest[0] + ".txt", line.toString());
 
                 line = new StringBuilder();
                 line.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
@@ -414,15 +421,15 @@ public class Main {
                 line.append("\t<ERBET>").append(rech[10]).append("</ERBET>\n");
                 line.append("</RECH>");
 
-                Util.writeFile("RECH-" + kubest.get(0)[0] + ".xml", line.toString());
+                Util.writeFile("RECH-" + kubest[0] + ".xml", line.toString());
 
                 System.out.println("\n------Rechnung erstellt!--------\n");
 
-                parseXML("RECH-" + kubest.get(0)[0] + ".xml", false);
+                parseXML("RECH-" + kubest[0] + ".xml", false);
                 System.out.println("Elemente sind wohlgeformt");
 
                 try {
-                    parseXML("RECH-" + kubest.get(0)[0] + ".xml", true);
+                    parseXML("RECH-" + kubest[0] + ".xml", true);
                     System.out.println("Elemente sind valide");
                 } catch (SAXParseException e) {
                     System.out.println("Elemente sind invalide");
@@ -474,23 +481,24 @@ public class Main {
                 spaltenErgebnis[] = {"ARTNR", "ARTBEZ", "MGE", "PREIS", "STEU", "EDAT", "BSTNR", "LNR", "MENGE", "LORT", "LPLZ"},
                 artnr, artbez, mge, preis, steu, edat, bstnr, lnr, menge, lort, lplz;
         HashSet<Integer> lagerNr = new HashSet<Integer>();
-        ArrayList<String[]> artikel, lagerbestand, lager, listErgebnis = new ArrayList<String[]>();
+        ArrayList<String[]> lagerbestand, lager, listErgebnis = new ArrayList<String[]>();
+        String[] artikel;
         int s1 = 0;
         StringBuilder line;
 
         // Holen aller Artikel mit gegebener Artikelnummer
-        artikel = con.select("Artikel", spaltenArtikel, "ARTNR = " + artikelnummer);
+        artikel = con.selectSingle("Artikel", spaltenArtikel, "ARTNR = " + artikelnummer);
 
-        if (artikel.size() > 0) {
+        if (artikel != null) {
             // Holen aller Lagerbestände mit gegebener Artikelnummer
             lagerbestand = con.select("LAGERBESTAND", spaltenLagerbestand, "ARTNR = " + artikelnummer);
 
-            artnr = artikel.get(0)[0];
-            artbez = artikel.get(0)[1];
-            mge = artikel.get(0)[2];
-            preis = artikel.get(0)[3];
-            steu = artikel.get(0)[4];
-            edat = artikel.get(0)[5];
+            artnr = artikel[0];
+            artbez = artikel[1];
+            mge = artikel[2];
+            preis = artikel[3];
+            steu = artikel[4];
+            edat = artikel[5];
 
             if (lagerbestand.size() > 0) {
 
