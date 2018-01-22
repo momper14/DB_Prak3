@@ -144,12 +144,9 @@ public class Main {
                     break;
 
                 case 5: {
-                    String bstnr,
-                            artnr,
+                    String artnr,
                             lnr,
                             menge;
-                    System.out.println("Bitte Bestandsnummer eingeben: ");
-                    bstnr = reader.readLine();
                     System.out.println("Bitte Artikelnummer eingeben: ");
                     artnr = reader.readLine();
                     System.out.println("Bitte Lagernummer eingeben: ");
@@ -157,7 +154,7 @@ public class Main {
                     System.out.println("Bitte Menge eingeben: ");
                     menge = reader.readLine();
                     try {
-                        erfassenLagerbestand(con, bstnr, artnr, lnr, menge);
+                        erfassenLagerbestand(con, artnr, lnr, menge);
                     } catch (SQLException e) {
                         Util.stdExceptionOut(e);
                     }
@@ -560,8 +557,8 @@ public class Main {
     }
 
     // neuen Lagerbestand erfassen
-    public static void erfassenLagerbestand(OracleConnection con, String bstnr, String artnr, String lnr, String menge) throws SQLException {
-        String tabelle = "LAGERBESTAND", spalten[] = {"BSTNR", "ARTNR", "LNR", "MENGE"}, werte[] = {bstnr, artnr, lnr, menge};
+    public static void erfassenLagerbestand(OracleConnection con, String artnr, String lnr, String menge) throws SQLException {
+        String tabelle = "LAGERBESTAND", spalten[] = {"ARTNR", "LNR", "MENGE"}, werte[] = {artnr, lnr, menge};
 
         Util.insert(con, tabelle, spalten, werte);
     }
@@ -598,7 +595,9 @@ public class Main {
             line = new StringBuilder();
             for (String str : arr) {
 
-                str = str.replace("00:00:00.0", "");
+                if (str != null) {
+                    str = str.replace("00:00:00.0", "");
+                }
                 System.out.printf("%15s ", str);
 
             }
